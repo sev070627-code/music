@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CURTAIN CALL | 대극장 뮤지컬 퀴즈</title>
+<style>
+:root{color-scheme:dark;--gold:#ffda8c;--text:#fff3e7;--muted:#e4bfbd;--line:#926460}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font:16px/1.55 system-ui,sans-serif;background:radial-gradient(ellipse at 50% 0%,#6c233e,#2c0f20 49%,#10090f 88%)}
+.curtain{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.curtain::before,.curtain::after{content:"";position:absolute;top:0;width:clamp(45px,19vw,280px);height:100%;opacity:.74;background:repeating-linear-gradient(97deg,#260712 0%,#7d1535 9%,#a7264a 13%,#3f081e 23%);clip-path:polygon(0 0,100% 0,60% 25%,36% 54%,43% 100%,0 100%)}
+.curtain::before{left:0}.curtain::after{right:0;transform:scaleX(-1)}
+.wrap{position:relative;width:min(calc(100% - 32px),680px);margin:auto;padding:clamp(24px,5vw,50px) 0 28px}
+header{text-align:center;margin-bottom:21px}
+.eyebrow,.act{color:var(--gold);font-size:.77rem;font-weight:750;letter-spacing:.15em}
+h1{margin:8px 0 5px;color:var(--gold);font:700 clamp(2.3rem,8vw,4.7rem)/1.04 Georgia,serif;letter-spacing:-.045em;text-shadow:0 3px 24px #ffb04465}
+header p{margin:0;color:var(--muted);font-weight:650}
+.stage{padding:clamp(17px,5vw,34px);border:1px solid #b77a5a;border-radius:21px;background:linear-gradient(165deg,#371522,#230e18 65%);box-shadow:0 20px 70px #10040bbb,inset 0 0 0 5px #ffda8c0c}
+.lights{display:flex;justify-content:center;gap:18px;margin-bottom:19px}
+.lights i{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px #ffc363}
+.hud,.actions{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.score{padding:3px 12px;border:1px solid var(--line);border-radius:999px;background:#451d29;color:var(--gold);font-weight:750}
+progress{display:block;width:100%;height:8px;margin-top:11px;accent-color:var(--gold)}
+h2{margin:19px 0 14px;font-size:clamp(1.22rem,4vw,1.65rem);line-height:1.4;text-wrap:pretty}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid #fff1b1;outline-offset:4px}
+.choices{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.choice{width:100%;min-height:45px;display:flex;align-items:center;gap:10px;text-align:left;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#341924;color:var(--text)}
+.choice:not(:disabled):hover,.btn:not(:disabled):hover{border-color:var(--gold);background:#552438}
+.choice:disabled{cursor:default;opacity:1}
+.letter{display:grid;place-items:center;flex:0 0 25px;height:25px;border-radius:6px;background:#663543;color:#ffe1a7;font-weight:800;font-size:.8rem}
+.label{flex:1;overflow-wrap:anywhere}
+.mark{font-size:.8rem;font-weight:750;white-space:nowrap}
+.good{border-color:#87d9a7;background:#17372a;color:#d1ffe0}
+.bad{border-color:#ff9b9d;background:#50242c;color:#ffe3e3}
+.hintbox,.feedback:not(:empty){border-radius:9px;margin:12px 0 0;padding:10px 12px}
+.hintbox{background:#49321a;color:#ffe4ac}
+.feedback:not(:empty){background:#31202a;border-left:3px solid var(--gold)}
+.actions{margin-top:14px}
+.btn{min-height:42px;padding:8px 13px;border:1px solid #b77a5a;border-radius:9px;background:transparent;color:var(--gold);font-weight:750}
+.btn:disabled{opacity:.74;cursor:default}
+.primary{background:var(--gold);border-color:var(--gold);color:#2c1119}
+.primary:not(:disabled):hover{background:#ffe8b3}
+.result{text-align:center}
+.final{margin:18px 0 0;color:var(--gold);font-size:clamp(3.5rem,12vw,6rem);font-weight:850;line-height:1}
+.final small{font-size:.26em}
+#stats,footer{color:var(--muted)}
+footer{text-align:center;font-size:.8rem;margin-top:15px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="curtain" aria-hidden="true"></div>
+<div class="wrap">
+<header>
+  <div class="eyebrow">✦ &nbsp; THE MUSICAL QUIZ &nbsp; ✦</div>
+  <h1>CURTAIN CALL</h1>
+  <p>대극장 뮤지컬 퀴즈</p>
+</header>
+<main class="stage">
+  <div class="lights" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <section id="quiz" aria-labelledby="question">
+    <div class="hud"><span class="act" id="act"></span><span class="score" id="score"></span></div>
+    <progress id="progress" max="10" value="0" aria-label="응답한 문제 수"></progress>
+    <h2 id="question" tabindex="-1"></h2>
+    <p id="hintText" class="hintbox" tabindex="-1" hidden></p>
+    <ol id="choices" class="choices" aria-label="선택지"></ol>
+    <div id="feedback" class="feedback" role="status" aria-atomic="true"></div>
+    <div class="actions">
+      <button type="button" id="hint" class="btn" aria-controls="hintText" aria-expanded="false">힌트 보기</button>
+      <button type="button" id="next" class="btn primary" hidden>다음 문제 →</button>
+    </div>
+  </section>
+  <section id="result" class="result" aria-labelledby="resultTitle" hidden>
+    <div class="act">✦ &nbsp; FINAL BOW &nbsp; ✦</div>
+    <h2 id="resultTitle" tabindex="-1">오늘의 커튼콜</h2>
+    <p class="final"><span id="final"></span><small> / 100점</small></p>
+    <p id="stats"></p>
+    <button type="button" id="restart" class="btn primary">다른 문제로 다시 시작 ↻</button>
+  </section>
+</main>
+<footer>힌트 없이 정답 +10점 · 힌트 사용 후 정답 +5점 · 오답 0점</footer>
+<noscript>퀴즈를 플레이하려면 브라우저에서 JavaScript를 허용해 주세요.</noscript>
+</div>
+<script>
+'use strict';
+
+// 각 줄: 문제 | 정답 | 오답 4개 | 힌트 | 정답 해설
+const bank = `〈드라큘라〉의 주인공 드라큘라 백작은 어떤 존재일까요?|흡혈귀|늑대인간|인어|요정|거인|밤에 활동하고 사람의 피를 마시는 존재예요.|드라큘라 백작은 사람의 피를 마시는 흡혈귀입니다.
+〈드라큘라〉에서 백작이 사랑하는 여성의 이름은 무엇일까요?|미나|줄리엣|도로시|신데렐라|벨|이름이 ‘미’로 시작해요. 조나단의 약혼자이기도 해요.|미나 머레이는 조나단의 약혼자이자 드라큘라가 사랑하는 인물입니다.
+〈드라큘라〉에서 드라큘라를 막으려는 반 헬싱은 어떤 인물일까요?|흡혈귀 사냥꾼|궁정 요리사|서커스 단장|왕실 화가|선장|사람들을 지키기 위해 흡혈귀를 추적해요.|반 헬싱은 드라큘라를 추적하는 인물입니다.
+〈드라큘라〉에서 루시가 드라큘라의 영향으로 변하는 모습은 무엇일까요?|흡혈귀|인어|요정|로봇|거인|변한 뒤에는 드라큘라와 같은 존재가 돼요.|루시는 드라큘라로 인해 흡혈귀가 됩니다.
+〈드라큘라〉에서 ‘Fresh Blood’라는 넘버 제목은 무슨 뜻일까요?|신선한 피|차가운 바람|푸른 달|비밀의 편지|마지막 춤|‘Blood’는 우리 몸속을 흐르는 붉은 액체를 뜻해요.|‘Fresh Blood’는 ‘신선한 피’라는 뜻입니다.
+〈드라큘라〉에 나오는 넘버 ‘Loving You Keeps Me Alive’의 제목에서 상대를 향한 감정은 무엇일까요?|사랑|질투|분노|지루함|두려움|‘Loving You’는 상대를 아끼는 마음을 표현하는 말이에요.|제목은 ‘당신을 사랑하는 것이 나를 살아 있게 한다’는 뜻입니다.
+〈데스노트〉에서 데스노트는 어떤 물건일까요?|이름을 적으면 그 사람이 죽는 노트|미래 날씨를 알려주는 달력|숨은 보물을 찾는 지도|시간을 되돌리는 시계|소원을 들어주는 램프|제목의 ‘Death’는 죽음, ‘Note’는 노트를 뜻해요.|데스노트는 이름을 적어 사람을 죽게 만드는 초자연적인 노트입니다.
+〈데스노트〉에서 야가미 라이토와 두뇌 싸움을 벌이는 탐정은 누구일까요?|엘(L)|홈즈|코난|포와로|왓슨|이 탐정은 영어 알파벳 한 글자로 불려요.|엘은 연쇄 사망 사건을 추적하며 라이토와 맞서는 탐정입니다.
+〈데스노트〉에서 류크는 어떤 존재일까요?|사신|경찰관|학교 선생님|뉴스 기자|의사|인간이 아니며, 죽음과 관련된 세계에서 왔어요.|류크는 데스노트를 인간계에 떨어뜨린 사신입니다.
+〈데스노트〉에서 라이토의 아버지 소이치로는 무슨 일을 할까요?|경찰|요리사|축구 선수|마술사|음악가|수사팀에서 사건을 조사하고 범인을 찾아요.|소이치로는 사건을 수사하는 경찰입니다.
+〈데스노트〉에서 라이토가 활동을 시작할 무렵, 그의 신분은 무엇일까요?|고등학생|왕자|택시 기사|방송 진행자|소방관|아직 학교에 다니며, 대학교에 들어가기 전이에요.|라이토는 이야기 초반에 뛰어난 성적을 가진 고등학생입니다.
+〈데스노트〉에서 라이토와 엘의 대결은 주로 어떤 방식으로 펼쳐질까요?|추리와 두뇌 싸움|요리 경연|축구 경기|춤 경연|자동차 경주|서로의 정체와 다음 행동을 알아내려 머리를 써요.|엘과 라이토는 서로의 수를 읽고 허점을 찾는 두뇌 싸움을 벌입니다.
+〈엘리자벳〉에서 엘리자벳은 결혼 후 어떤 신분이 될까요?|오스트리아의 황후|이집트의 여왕|프랑스의 장군|영국의 총리|스페인의 화가|결혼 상대는 오스트리아의 황제예요.|엘리자벳은 프란츠 요제프와 결혼해 오스트리아의 황후가 됩니다.
+〈엘리자벳〉에서 ‘토드’가 사람의 모습으로 나타낸 것은 무엇일까요?|죽음|봄|시간|음악|꿈|삶이 끝나는 순간을 떠올려 보세요.|토드는 ‘죽음’을 사람으로 그린 인물입니다.
+〈엘리자벳〉에서 엘리자벳과 결혼하는 프란츠 요제프는 어떤 사람일까요?|황제|탐정|신문 기자|선장|정원사|궁정에 살며 나라를 다스리는 인물이에요.|프란츠 요제프는 오스트리아의 황제입니다.
+〈엘리자벳〉에서 엘리자벳이 ‘나는 나만의 것’을 부르며 드러내는 마음은 무엇일까요?|내 삶을 스스로 결정하고 싶다|바다에서 보물을 찾고 싶다|요리 대회에서 우승하고 싶다|세상에서 가장 빠르게 달리고 싶다|유명한 탐정이 되고 싶다|제목처럼 자기 인생은 자기 것이라고 말해요.|이 노래에서 엘리자벳은 궁정의 규칙에 얽매이지 않고 자기 뜻대로 살고 싶다는 마음을 드러냅니다.
+〈엘리자벳〉에서 루돌프는 엘리자벳과 어떤 관계일까요?|아들|남편|아버지|오빠|삼촌|루돌프는 엘리자벳보다 한 세대 아래이고, 황위를 이을 왕자예요.|루돌프는 엘리자벳과 프란츠 요제프의 아들입니다.
+〈엘리자벳〉의 주인공은 실존 인물을 바탕으로 했을까요?|실제로 살았던 오스트리아 황후다|그리스 신화에 나오는 여신이다|동화에 나오는 인어다|달에 사는 상상 속 인물이다|미래에서 온 로봇이다|궁정 생활을 한 역사 속 인물이에요.|뮤지컬의 주인공은 실존 인물인 오스트리아 황후 엘리자벳을 바탕으로 합니다.
+〈디어 에반 핸슨〉에서 주인공 에반은 처음에 누구에게 편지를 쓸까요?|자기 자신|대통령|산타클로스|유명 가수|옆집 할머니|제목 속 ‘디어 에반 핸슨’은 편지의 첫말이에요. 편지를 쓴 사람도 에반이에요.|에반은 상담의 일환으로 자기 자신에게 편지를 씁니다.
+〈디어 에반 핸슨〉에서 코너가 에반에게 자기 이름을 써 준 곳은 어디일까요?|팔의 깁스|운동화|우산|자전거|모자|다친 팔을 고정하려고 두르는 딱딱한 보호대예요.|코너는 에반의 팔 깁스에 자기 이름을 씁니다.
+〈디어 에반 핸슨〉에서 조이는 코너와 어떤 관계일까요?|여동생|어머니|할머니|담임 선생님|이모|둘 다 머피 집안의 자녀이고, 조이가 더 어려요.|조이 머피는 코너 머피의 여동생입니다.
+〈디어 에반 핸슨〉에서 하이디는 에반의 누구일까요?|어머니|누나|친구|이웃|담임 선생님|에반과 함께 살며 그를 돌보는 어른이에요.|하이디 핸슨은 에반의 어머니입니다.
+〈디어 에반 핸슨〉의 대표곡 ‘You Will Be Found’가 전하는 위로에 가장 가까운 말은 무엇일까요?|힘들어도 너는 혼자가 아니야|무조건 남보다 빨라야 해|어떤 일이든 혼자 해결해야 해|슬프면 친구에게 숨겨야 해|실수한 사람은 다시 도전하면 안 돼|외로울 때 누군가 손을 내밀어 줄 수 있다는 노래예요.|이 곡은 고립감을 느껴도 누군가와 연결될 수 있다는 위로를 전합니다.
+〈디어 에반 핸슨〉은 주로 어디에서의 일상을 배경으로 할까요?|현대의 고등학교와 가정|중세의 왕궁|우주 정거장|해적선|고대 로마의 경기장|주인공은 집과 학교를 오가는 십대예요.|작품은 현대의 고등학생 에반과 그 주변 가족들의 이야기를 그립니다.`
+  .split('\n').map((line, id) => {
+    const [question, answer, a, b, c, d, hint, explanation] = line.split('|');
+    return { id, question, answer, choices: [answer, a, b, c, d], hint, explanation };
+  });
+
+const ROUND = 10;
+const $ = id => document.getElementById(id);
+let previous = new Set();
+let round, cursor, score, correctCount, hintCount, hinted, answered;
+
+function shuffle(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function start(focus = true) {
+  round = shuffle(bank.filter(item => !previous.has(item.id))).slice(0, ROUND);
+  previous = new Set(round.map(item => item.id));
+  cursor = score = correctCount = hintCount = 0;
+  $('result').hidden = true;
+  $('quiz').hidden = false;
+  showQuestion(focus);
+}
+
+function updateScore() {
+  $('score').textContent = `${score}점`;
+}
+
+function showQuestion(focus) {
+  const item = round[cursor];
+  hinted = answered = false;
+  $('act').textContent = `문제 ${String(cursor + 1).padStart(2, '0')} / ${ROUND}`;
+  $('progress').value = cursor;
+  $('question').textContent = item.question;
+  $('hintText').hidden = true;
+  $('hintText').textContent = '';
+  $('feedback').textContent = '';
+  $('hint = invalid')?.remove();
+  $('hint').disabled = false;
+  $('hint').textContent = '힌트 보기';
+  $('hint').setAttribute('aria-expanded', 'false');
+  $('next').hidden = true;
+  $('next').textContent = cursor === ROUND - 1 ? '최종 점수 보기 →' : '다음 문제 →';
+  $('choices').replaceChildren(...shuffle(item.choices).map((text, index) => {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    const letter = document.createElement('span');
+    const label = document.createElement('span');
+    button.type = 'button';
+    button.className = 'choice';
+    letter.className = 'letter';
+    letter.textContent = 'ABCDE'[index];
+    label.className = 'label';
+    label.textContent = text;
+    button.append(letter, label);
+    button.addEventListener('click', () => choose(text, button));
+    li.append(button);
+    return li;
+  }));
+  updateScore();
+  if (focus) $('question').focus();
+}
+
+$('hint').addEventListener('click', () => {
+  if (hinted || answered) return;
+  hinted = true;
+  hintCount++;
+  $('hintText').textContent = `힌트: ${round[cursor].hint}`;
+  $('hintText').hidden = false;
+  $('hint').setAttribute('aria-expanded', 'true');
+  $('hint').textContent = '힌트 사용 · 정답 시 +5점';
+  $('hintText').focus();
+  $('hint').disabled = true;
+});
+
+function choose(text, selected) {
+  if (answered) return;
+  answered = true;
+  const item = round[cursor];
+  const correct = text === item.answer;
+  const points = correct ? (hinted ? 5 : 10) : 0;
+  score += points;
+  if (correct) correctCount++;
+
+  for (const button of $('choices').querySelectorAll('.choice')) {
+    button.disabled = true;
+    const isAnswer = button.querySelector('.label').textContent === item.answer;
+    if (isAnswer || button === selected) {
+      const mark = document.createElement('span');
+      button.classList.add(isAnswer ? 'good' : 'bad');
+      mark.className = 'mark';
+      mark.textContent = isAnswer ? '✓ 정답' : '✗ 오답';
+      button.append(mark);
+    }
+  }
+
+  $('hint').disabled = true;
+  $('progress').value = cursor + 1;
+  updateScore();
+  const message = correct ? `정답! +${points}점` : `오답 · 정답: ${item.answer}`;
+  $('feedback').textContent = `${message} — ${item.explanation}`;
+  $('next').hidden = false;
+  $('next').focus({preventScroll:true});
+}
+
+$('next').addEventListener('click', () => {
+  if (!answered || $('quiz').hidden) return;
+  if (cursor + 1 < ROUND) {
+    cursor++;
+    showQuestion(true);
+    return;
+  }
+  $('quiz').hidden = true;
+  $('result').hidden = false;
+  $('final').textContent = score;
+  $('stats').textContent = `정답 ${correctCount}/${ROUND} · 힌트 ${hintCount}회 사용`;
+  $('resultTitle').focus();
+});
+
+$('restart').addEventListener('click', () => start());
+start(false);
+</script>
+</body>
+</html>
